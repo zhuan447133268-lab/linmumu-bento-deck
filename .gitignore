@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+scripts/shell/
+# 实际课件内容不入库（课程内容是私有交付物）；模板除外
+decks/*.py
+!decks/_template.py
