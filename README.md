@@ -62,6 +62,7 @@ bento-deck/
    └─ *.py             # 实际课件内容（gitignore，课件是私有内容）
 ```
 
-## License
+## License & Credits
 
 本仓库工作流与样式系统：MIT。bento 壳与格式：[nyblnet/bento](https://github.com/nyblnet/bento)，MIT。
+视觉风格灵感参考 [op7418/guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill)（AGPL v3，本项目未使用其代码）。
