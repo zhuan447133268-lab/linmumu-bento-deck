@@ -63,6 +63,11 @@ slide("s-id", 底色, 切换效果, 演讲者备注, [元素...])
 4. `T()` 的 html 只认内联白名单（b/i/u/s/code/br/span），块级标签被过滤
 5. 深底 accent 用 `IKB_LT`（#7AA5FF），`IKB`（#002FA7）在深底上看不清
 6. 版式规矩：边距 96px（内容 x≤1184）；kicker 14px 字距 3；页标题 38-40px/800；封面 100px/900；三卡 x=96/467/838 宽 346
+7. **不得不直接编辑 `.bento.html` 产物时**（比如用户给了现成 HTML 要求删页/改视角）：只改 `slides` 数组不够，Bento 的 `collab.sync.pos` 还存着已删 slide 与元素的位置信息，浏览器会据此继续渲染。必须同时：
+   - 从 `collab.sync.pos` 删除所有以被删 slide id 开头的条目
+   - 把 `collab.on` 设为 `false`（静态分发不需要协同）
+   - 文件内搜索 slide id 确认无残留
+   - 最后用浏览器/应用打开验证页数
 
 ## 样式令牌（bento_lib 常量，别临场发明新色）
 
