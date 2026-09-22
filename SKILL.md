@@ -36,7 +36,7 @@ description: 生成 bento 单文件可编辑课件/PPT（IKB 克莱因蓝风格�
 deck 文件是纯 Python 数据：`TITLE` / `OUT_STEM` / `SLIDES`（可选 `AUTHOR`/`EVENT`/`MODIFIED`）。每页：
 
 ```python
-slide("s-id", 底色, 切换效果, 演讲者备注, [元素...])
+slide("s-id", 底色, 切换效果, 演讲者备注, [元素...], ambient=None)
 ```
 
 - 底色：`CREAM`（奶油，内容页）/ `DARK`（深色 statement 页）/ `IKB`（克莱因蓝，封面收尾）
@@ -54,6 +54,24 @@ slide("s-id", 底色, 切换效果, 演讲者备注, [元素...])
 - 经典结构（看 `decks/personal_skill.py` 06→09 页）：幕封大链(hl_op=0 隐身) → 迷你链+hl亮起 → 内容页 hl 逐步右移
 
 一套幻灯片里**只能用一条链**（内部 id 固定：cline/n1../l1../hl）。
+
+## 电影感封面（可选 · 零改壳）
+
+想让封面/分隔页有 Kage 式电影感动效（漂浮光点 + 呼吸光斑 + 扫光 + 暗角），给 `slide()` 加一个 `ambient` 参数即可——背景自动变成全幅动态 SVG（bento 官方 `image` 元素 + data-URI，不碰壳引擎，编辑版/放映版都能播）：
+
+- `ambient="blue"`：克莱因蓝电影感（默认封面配色，配 CREAM 文字）
+- `ambient="warm"`：暖色绘本感（自动加一层暗角 scrim 保文字可读）
+- `ambient="dark"`：近黑深空蓝
+
+```python
+slide("s-cover", IKB, "none", "备注", [ ...原有文字元素... ], ambient="blue")
+```
+
+要点：
+
+- 动态背景是库里 `ambient_bg()` 生成的 SVG，**每门课只需在封面那行加一个参数**，边际 token 成本 ≈ 0。
+- 背景图自动插到该页 elements 最前，你的文字/分隔条照常压在上面，配色照旧。
+- 不传 `ambient` → 行为和以前完全一致（纯色背景）。
 
 ## 坑（踩过的，别再踩）
 

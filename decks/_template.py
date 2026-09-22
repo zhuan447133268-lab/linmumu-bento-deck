@@ -9,7 +9,7 @@ TITLE = "课件标题"
 OUT_STEM = r"D:\AI数字素养培训方案\<课程目录>\bento\课件名"  # 产物路径（不带扩展名）
 
 SLIDES = [
-    # 封面（IKB 大字 + 奶油条）
+    # 封面（IKB 大字 + 奶油条 + 电影感动态背景；ambient 可选 blue/warm/dark，不想要就删掉）
     slide("s-cover", IKB, "none", "演讲者备注写在这里", [
         T("k1", 96, 56, 600, 26, "KICKER · 课程系列", 15, 600,
           "rgba(244,241,234,0.7)", ls=3),
@@ -18,7 +18,7 @@ SLIDES = [
         S("bar", 96, 420, 320, 16, "rect", CREAM),
         T("sub", 96, 464, 1088, 40, "一句副标题", 24, 500,
           "rgba(244,241,234,0.85)", fx={"enter": "fade-up", "order": 1}),
-    ]),
+    ], ambient="blue"),
     # 内容页（奶油底：kicker + 标题 + 三卡片）
     slide("s-cards", CREAM, "fade", "备注", [
         T("k2", 96, 56, 600, 24, "SECTION · 小节名", 14, 600,

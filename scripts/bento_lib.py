@@ -12,6 +12,7 @@ bento_lib — bento/slides 课件生成核心库（林木木课件工坊 · bent
   4. 内置 Reveal 页码与 {{page}} 令牌二选一——本库默认关内置（slideNumber:false）
 """
 import json, re, sys, urllib.request
+from urllib.parse import quote
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding='utf-8')
@@ -116,10 +117,99 @@ def step_chain(labels, big, stroke_c, label_c, line_c, hl_idx=None,
     return els
 
 
+# ---------- 电影感动态背景（ambient，零改壳）----------
+# 用官方 image 元素 + data-URI 动画 SVG 实现 Kage 式电影感背景。
+# 三款配色：blue(克莱因蓝) / warm(暖绘本) / dark(近黑深空蓝)。
+# 背景 SVG 内嵌 SMIL 动画，不依赖外壳引擎，编辑版/放映版都能播。
+def _svg_ambient(variant):
+    palettes = {
+        "blue": dict(c0="#1a4bd0", c1="#002FA7", c2="#001a63",
+                     mote="rgba(220,232,255,", spot="#bcd2ff"),
+        "warm": dict(c0="#ffd9a0", c1="#e8895a", c2="#7a3b1e",
+                     mote="rgba(255,240,210,", spot="#ffe6c2"),
+        "dark": dict(c0="#24407a", c1="#0e1830", c2="#05080f",
+                     mote="rgba(180,200,255,", spot="#9fb8ff"),
+    }
+    p = palettes.get(variant, palettes["blue"])
+    # 确定性漂浮光点（避免每次构建输出不同）
+    seeds = [(120, 640, 40, -220, 9), (300, 700, 70, -260, 11),
+             (520, 660, 30, -240, 8), (760, 710, 90, -280, 13),
+             (980, 650, 50, -230, 10), (1140, 700, 60, -250, 12),
+             (200, 560, -40, -210, 7), (640, 600, 20, -200, 9),
+             (880, 580, -30, -220, 8), (420, 720, 55, -260, 12),
+             (1060, 600, 45, -240, 10), (60, 600, 35, -200, 7),
+             (700, 660, -50, -250, 11), (1180, 560, 25, -210, 9),
+             (360, 620, 15, -230, 8)]
+    motes = ""
+    for i, (x, y, dx, dy, dur) in enumerate(seeds):
+        r = 1.2 + (i % 3) * 0.6
+        motes += (
+            f"<circle cx='{x}' cy='{y}' r='{r:.1f}' fill='{p['mote']}0.55)'>"
+            f"<animateTransform attributeName='transform' type='translate' "
+            f"values='0 0;{dx} {dy}' dur='{dur}s' repeatCount='indefinite'/>"
+            f"<animate attributeName='opacity' values='0;0.6;0' "
+            f"dur='{dur}s' repeatCount='indefinite'/></circle>")
+    spots = ""
+    for j, (sx, sy, sr, so) in enumerate([(260, 200, 90, 0.16),
+                                         (1010, 160, 70, 0.13),
+                                         (640, 520, 120, 0.10)]):
+        spots += (
+            f"<circle cx='{sx}' cy='{sy}' r='{sr}' fill='{p['spot']}' "
+            f"opacity='{so}'>"
+            f"<animate attributeName='opacity' values='{so};{so*2.2:.2f};{so}' "
+            f"dur='{7+j*2}s' repeatCount='indefinite'/>"
+            f"<animateTransform attributeName='transform' type='translate' "
+            f"values='0 0;12 -10;0 0' dur='{11+j*3}s' repeatCount='indefinite'/>"
+            f"</circle>")
+    svg = (
+        f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720' "
+        f"preserveAspectRatio='xMidYMid slice'><defs>"
+        f"<radialGradient id='g' cx='50%' cy='36%' r='80%'>"
+        f"<stop offset='0%' stop-color='{p['c0']}'/>"
+        f"<stop offset='58%' stop-color='{p['c1']}'/>"
+        f"<stop offset='100%' stop-color='{p['c2']}'/></radialGradient>"
+        f"<radialGradient id='vig' cx='50%' cy='50%' r='72%'>"
+        f"<stop offset='55%' stop-color='#000' stop-opacity='0'/>"
+        f"<stop offset='100%' stop-color='#000' stop-opacity='0.42'/>"
+        f"</radialGradient>"
+        f"<linearGradient id='scan' x1='0' y1='0' x2='1' y2='0'>"
+        f"<stop offset='0%' stop-color='{p['spot']}' stop-opacity='0'/>"
+        f"<stop offset='50%' stop-color='{p['spot']}' stop-opacity='0.5'/>"
+        f"<stop offset='100%' stop-color='{p['spot']}' stop-opacity='0'/>"
+        f"</linearGradient></defs>"
+        f"<rect width='1280' height='720' fill='url(#g)'/>{spots}{motes}"
+        f"<rect x='-300' y='-120' width='360' height='960' fill='url(#scan)' "
+        f"transform='skewX(-18)'>"
+        f"<animateTransform attributeName='transform' type='translate' "
+        f"values='-200 0;1700 0' dur='9s' repeatCount='indefinite' additive='sum'/>"
+        f"</rect>"
+        f"<rect width='1280' height='720' fill='url(#vig)'/></svg>")
+    return "data:image/svg+xml," + quote(svg, safe="")
+
+
+def ambient_bg(variant="blue"):
+    """返回电影感动态背景的 data-URI（SMIL 动画 SVG）。"""
+    return _svg_ambient(variant)
+
+
 # ---------- 幻灯片骨架 ----------
-def slide(id, bg, transition, notes, elements):
+def slide(id, bg, transition, notes, elements, ambient=None):
+    els = list(elements)
+    if ambient:
+        els.insert(0, {
+            "id": "amb-bg", "type": "image", "x": 0, "y": 0,
+            "w": PAGE_W, "h": PAGE_H, "src": ambient_bg(ambient),
+            "fit": "cover", "radius": 0, "rotation": 0, "opacity": 1,
+            "fx": {"ambient": "kenburns", "ken": {"dir": "drift",
+                                                  "scale": 1.06, "duration": 24}},
+        })
+        if ambient == "warm":
+            els.insert(1, {"id": "amb-scrim", "type": "shape", "shape": "rect",
+                           "x": 0, "y": 0, "w": PAGE_W, "h": PAGE_H,
+                           "fill": "rgba(18,10,2,0.32)", "stroke": "none",
+                           "radius": 0})
     return {"id": id, "background": bg, "transition": transition,
-            "notes": notes, "elements": elements}
+            "notes": notes, "elements": els}
 
 
 def make_doc(title, slides, accent=IKB, author="AI 落地实践",
